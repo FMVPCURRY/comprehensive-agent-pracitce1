@@ -1,256 +1,114 @@
 # 智盾·聊天诈骗识别系统
 
-本项目是一个面向网络聊天场景的诈骗文本识别系统，基于 ChiFraud baseline 数据与本项目生成的对话数据完成训练和网页集成。系统包含本地 BERT、ChineseBERT 推理，以及可选的 Qwen API 云端大模型对比。
+本项目是一个面向网络聊天场景的诈骗文本识别系统，基于 ChiFraud baseline 数据和本项目生成的诈骗对话数据完成数据整合、模型训练、评估和网页集成。
 
-当前交付包主要给前端同学继续开发页面与联调接口使用，不需要重新训练模型。
+系统包含：
 
-## 1. 快速启动
+- BERT 本地分类模型
+- ChineseBERT 本地分类模型
+- Qwen API 云端大模型对比
+- 前端工作台 `app_v2/web/`
+- 后端推理服务 `app_v2/web_app.py`
+- 数据处理、训练和评估脚本
 
-解压项目后进入项目根目录：
+## 快速启动
 
-```cmd
-cd /d 解压后的目录
-```
-
-如果已经有项目使用的 `nlp` 环境，可以直接运行：
-
-```cmd
-start_app.cmd
-```
-
-或手动指定 Python：
+推荐使用已经配置好的 `nlp` 环境：
 
 ```cmd
+cd /d D:\third2\comprehensive\Baseline\ChiFraud-main\app_v2
 D:\anaconda\envs\nlp\python.exe -B web_app.py --host 127.0.0.1 --port 7871
 ```
 
-启动成功后访问：
+启动后访问：
 
 ```text
 http://127.0.0.1:7871
 ```
 
-局域网演示可运行：
+局域网演示可以使用 `--host 0.0.0.0` 启动，然后让同一局域网设备访问 `http://你的IPv4地址:7871`。
 
-```cmd
-start_app_lan.cmd
-```
-
-然后用 `ipconfig` 查看本机 IPv4 地址，其他同一局域网设备访问：
-
-```text
-http://本机IPv4地址:7871
-```
-
-## 2. 环境配置
-
-推荐使用 Anaconda：
-
-```cmd
-conda create -n nlp python=3.10 -y
-conda activate nlp
-python -m pip install -r requirements.txt
-```
-
-如果使用已有环境：
+## 环境配置
 
 ```cmd
 D:\anaconda\envs\nlp\python.exe -m pip install -r requirements.txt
 ```
 
-检查 PyTorch 是否可用：
+截图 OCR 是可选功能，如果需要使用，请额外安装 `Pillow`、`pytesseract` 和 Tesseract OCR 主程序。
+
+## Qwen API 配置
+
+BERT 和 ChineseBERT 是本地模型，不需要 API Key。Qwen API 需要在启动服务前设置环境变量：
 
 ```cmd
-python -c "import torch; print(torch.__version__); print(torch.cuda.is_available())"
+set DASHSCOPE_API_KEY=你的APIKey
 ```
 
-`torch.cuda.is_available()` 为 `True` 时会优先使用 GPU；为 `False` 时也可以 CPU 推理，但首次加载和预测会慢一些。
-
-## 3. Qwen API 配置
-
-BERT 和 ChineseBERT 是本地离线模型，不需要网络和 API Key。Qwen API 是云端千问接口，需要配置环境变量。
-
-当前代码不会在源码里写死 API Key。需要使用 Qwen API 时，在启动服务前执行：
+或：
 
 ```cmd
-set DASHSCOPE_API_KEY=你的千问APIKey
+set QWEN_API_KEY=你的APIKey
 ```
 
-然后再启动：
+本仓库不会在源码中写死 API Key。
 
-```cmd
-python -B web_app.py --host 127.0.0.1 --port 7871
-```
+## 数据说明
 
-如果没有配置 API Key，网页里的 BERT 和 ChineseBERT 仍可正常使用，只有选择 Qwen API 时会提示密钥未配置。
+- `dataset/data.jsonl`：大模型生成的诈骗对话数据
+- `dataset/dialogue_binary_matched_1x/`：匹配采样 1x 数据集
+- `dataset/dialogue_binary_matched_2x/`：匹配采样 2x 数据集
+- `app_v2/dataset/`：网页演示和推理所需的小规模数据划分
 
-## 4. 前端开发入口
+原始 ChiFraud 大 CSV 文件和完整中间转换文件体积较大，未纳入 GitHub 版本库。
 
-前端主要修改：
+## 模型结果
 
-```text
-web/index.html
-web/styles.css
-web/app.js
-```
+以 `dialogue_binary_matched_2x/test.tsv` 为测试集，共 120 条样本，其中正常 90 条，诈骗 30 条。
 
-当前页面基于原始 `fraud.html` 风格重做，并已经接入后端接口。前端同学通常只需要改 `web/` 目录，不需要动模型代码。
-
-后端服务入口：
-
-```text
-web_app.py
-```
-
-模型推理入口：
-
-```text
-inference_backend.py
-```
-
-## 5. 后端接口
-
-### 健康检查
-
-```http
-GET /api/health
-```
-
-### 获取模型信息
-
-```http
-GET /api/models
-```
-
-### 聊天诈骗检测
-
-```http
-POST /api/predict
-Content-Type: application/json
-```
-
-请求示例，按多轮对话传入：
-
-```json
-{
-  "model": "chinesebert",
-  "messages": [
-    {"role": "用户", "text": "你好，我在网上看到一个兼职刷单，说先垫付 300 元。"},
-    {"role": "对方", "text": "名额有限，你现在转账就能进群，晚了就没有资格了。"}
-  ]
-}
-```
-
-也可以直接传一整段文本：
-
-```json
-{
-  "model": "chinesebert",
-  "text": "用户：你好，我在网上看到一个兼职刷单，说先垫付 300 元。\n对方：名额有限，你现在转账就能进群。"
-}
-```
-
-可选模型：
-
-```text
-bert
-chinesebert
-qwen_api
-```
-
-返回结果核心字段：
-
-```json
-{
-  "ok": true,
-  "result": {
-    "model": "chinesebert",
-    "label": "fraud",
-    "label_text": "诈骗",
-    "risk_score": 0.98,
-    "probabilities": {
-      "normal": 0.02,
-      "fraud": 0.98
-    },
-    "elapsed_ms": 120
-  }
-}
-```
-
-说明：BERT 和 ChineseBERT 的概率来自分类 logits 的 softmax；Qwen API 是生成式判断，网页展示的是生成标签，不等价于真实置信度。
-
-## 6. 模型结果
-
-当前网页右下角图表使用同一测试集 `dataset/dialogue_binary_matched_2x/test.tsv`，共 120 条样本，正常 90 条、诈骗 30 条。
-
-| 模型 | Acc | 诈骗类 Precision | 诈骗类 Recall | 诈骗类 F1 |
+| 模型 | Accuracy | 诈骗 Precision | 诈骗 Recall | 诈骗 F1 |
 | --- | ---: | ---: | ---: | ---: |
 | BERT | 91.67% | 81.25% | 86.67% | 83.87% |
 | ChineseBERT | 95.00% | 90.00% | 90.00% | 90.00% |
 | Qwen API | 87.50% | 67.44% | 96.67% | 79.45% |
 
-结论：ChineseBERT 综合表现最好，适合作为默认模型；BERT 速度快，适合作为轻量备用；Qwen API 诈骗召回高，但误报较多，适合做大模型对比展示。
+结论：ChineseBERT 综合表现最好，BERT 适合作为轻量备用，Qwen API 适合做大模型对比展示。
 
-## 7. 主要目录
+## 主要目录
 
 ```text
 ChiFraud-main/
-├─ web/                         # 前端页面
-├─ web_app.py                   # HTTP 服务入口
-├─ inference_backend.py         # 统一推理入口
-├─ models/                      # BERT / ChineseBERT 模型结构
-├─ saved_dict/                  # 已训练权重
-├─ pretrained/                  # 本地预训练模型文件
-├─ dataset/                     # 训练、验证、测试数据
-├─ result_qwen/                 # Qwen API 评估结果
-├─ requirements.txt             # Python 依赖
-├─ start_app.cmd                # 本机启动脚本
-└─ start_app_lan.cmd            # 局域网启动脚本
+|- app_v2/                  # 当前网页应用版本
+|  |- web/                  # 前端页面、样式和交互脚本
+|  |- web_app.py            # 本地 HTTP 服务入口
+|  |- inference_backend.py  # 统一推理后端
+|  |- models/               # 模型结构
+|  `- dataset/              # 网页演示数据
+|- dataset/                 # 数据处理结果和实验数据
+|- run.py                   # baseline 训练入口
+|- train_eval.py            # 训练和评估逻辑
+`- evaluate_qwen_api.py     # Qwen API 评估脚本
 ```
 
-## 8. 常见问题
+## GitHub 上传说明
+
+本仓库保留项目关键代码、网页前端、后端推理服务、训练与评估脚本，以及小规模关键数据划分。
+
+以下内容不会上传到 GitHub：
+
+- 预训练模型权重：`pretrained/`、`app_v2/pretrained/`
+- 微调后的模型权重：`saved_dict/`、`app_v2/saved_dict/`
+- 本地数据库、日志、运行结果和压缩包
+- Qwen / DashScope API Key
+- 原始 ChiFraud 大 CSV 和完整中间转换文件
+
+如需使用 Qwen API，请在本地启动前设置环境变量。
+
+## 常见问题
 
 ### 页面能打开，但点击检测失败
 
-先查看启动后端的终端输出。常见原因包括依赖未安装、模型文件缺失、端口被占用、Qwen API Key 未配置或网络不可用。
+先查看启动后端的终端输出。常见原因包括依赖未安装、模型文件缺失、端口被占用或 Qwen API Key 未配置。
 
 ### 第一次检测很慢
 
 模型是懒加载的，第一次选择某个模型时会加载权重，后续预测会快很多。
-
-### Qwen API 显示密钥未配置
-
-启动前设置：
-
-```cmd
-set DASHSCOPE_API_KEY=你的千问APIKey
-```
-
-然后重新运行 `start_app.cmd` 或手动启动 `web_app.py`。
-
-### 其他电脑访问不了
-
-使用 `start_app_lan.cmd` 启动，并确认两台电脑在同一局域网内。必要时允许 Windows 防火墙放行 Python 或 7871 端口。
-
-### 文件乱码
-
-所有网页和 Markdown 文件请用 UTF-8 保存。VS Code 右下角可以查看和切换编码。
-
-## GitHub ????
-
-??????????????????????????/?????????????????????? GitHub?
-
-- ????????`pretrained/`?`app_v2/pretrained/`
-- ?????????`saved_dict/`?`app_v2/saved_dict/`
-- ?????????????????
-- Qwen / DashScope API Key
-
-???? Qwen API???????????????
-
-```cmd
-set DASHSCOPE_API_KEY=??APIKey
-```
-
-???? BERT / ChineseBERT???????????????? README ???????
-
-?????GitHub ???? `dataset/data.jsonl`?`dataset/dialogue_binary_matched_1x/`?`dataset/dialogue_binary_matched_2x/` ? `app_v2/dataset/` ?????????? ChiFraud ? CSV ?????????????????????
