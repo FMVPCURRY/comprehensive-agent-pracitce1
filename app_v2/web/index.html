@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>智盾·聊天诈骗识别系统</title>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" />
+  <link rel="stylesheet" href="/dashboard.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <header class="site-nav">
+    <div class="nav-inner">
+      <a class="wordmark" href="#" data-page-link="detect" aria-label="智盾首页"><span class="shield-glyph"></span><b>智盾</b></a>
+      <nav class="nav-links" aria-label="主导航">
+        <button class="nav-item active" data-page="detect">智能检测</button>
+        <button class="nav-item" data-page="history">检测历史</button>
+        <button class="nav-item" data-page="alerts">反诈警示</button>
+        <button class="nav-item" data-page="models">模型中心</button>
+      </nav>
+      <div class="nav-actions">
+        <span class="status-pill" id="serviceStatus"><i class="fas fa-circle-notch fa-spin"></i> 正在连接</span>
+        <span class="guest-pill" id="guestPanel"><a href="/login">登录</a><a class="signup-link" href="/register">注册</a></span>
+        <span class="user-pill" id="authPanel" style="display:none"><span id="currentUserName"></span><button id="accountSettingsBtn">修改密码</button><button id="logoutBtn">退出</button></span>
+      </div>
+    </div>
+  </header>
+
+  <main class="main-frame compact-frame">
+    <section class="page active" id="page-detect">
+      <div class="section-heading page-heading-detect">
+        <span class="section-label">智能检测</span>
+        <h1>聊天诈骗风险识别工作台</h1>
+        <p>输入聊天记录、上传 TXT 或识别截图，选择 BERT、ChineseBERT 或 Qwen API 输出风险研判。</p>
+      </div>
+      <div class="feature-grid detect-grid">
+        <section class="feature-card model-route-card wide-card">
+          <div class="card-head compact-head"><span>选择检测模型</span><small>当前路由</small></div>
+          <div class="model-switcher compact-model-switcher" id="modelTabs">
+            <button class="model-card" data-model="bert"><span>BERT</span><b>快速</b></button>
+            <button class="model-card active" data-model="chinesebert"><span>ChineseBERT</span><b>推荐</b></button>
+            <button class="model-card" data-model="qwen_api"><span>Qwen API</span><b>云端</b></button>
+          </div>
+          <input type="hidden" id="modelSelect" value="chinesebert" />
+        </section>
+
+        <section class="feature-card wide-card input-pipeline">
+          <div class="card-head"><span>输入管线</span><small>文本 / TXT / 截图</small></div>
+          <textarea id="batchText" class="text-input" rows="6" placeholder="用户A: 你好，我在网上看到一个兼职刷单，说先垫付 300 元...&#10;用户B: 名额有限，你现在转账就能进群，晚了就没有资格了。"></textarea>
+          <div class="button-row">
+            <button class="white-btn compact" id="parseBatchBtn"><i class="fas fa-wand-magic-sparkles"></i> 导入对话框</button>
+            <label class="white-btn compact" for="fileUpload"><i class="fas fa-file-arrow-up"></i> 上传 TXT</label>
+            <input class="hidden-input" type="file" id="fileUpload" accept=".txt,text/plain" />
+            <label class="white-btn compact" for="screenshotUpload"><i class="fas fa-image"></i> 上传截图</label>
+            <input class="hidden-input" type="file" id="screenshotUpload" accept="image/*" />
+            <button class="white-btn compact success" id="ocrBtn"><i class="fas fa-eye"></i> 识别截图文字</button>
+          </div>
+          <img id="screenshotPreview" class="screenshot-preview" alt="截图预览" />
+          <p class="fine-print">截图识别依赖 OCR 环境；未配置时可直接粘贴文本或上传 TXT。</p>
+        </section>
+
+        <section class="feature-card wide-card conversation-card">
+          <div class="card-head"><span>多轮对话上下文</span><small>标准化输入</small></div>
+          <div id="messageList" class="message-list"></div>
+          <div class="message-compose">
+            <select id="roleSelect"><option value="用户A">用户A</option><option value="用户B">用户B</option><option value="客服">客服</option><option value="对方">对方</option></select>
+            <textarea id="newMsgText" rows="1" placeholder="补充一轮对话..."></textarea>
+            <button class="white-btn compact" id="addMsgBtn"><i class="fas fa-plus"></i> 添加</button>
+            <button class="white-btn compact danger" id="resetConversationBtn"><i class="fas fa-trash"></i> 清空</button>
+            <button class="white-btn compact" id="loadExampleBtn"><i class="fas fa-flask"></i> 示例</button>
+          </div>
+          <button class="black-btn run-btn" id="detectBtn"><i class="fas fa-robot"></i> 开始检测</button>
+        </section>
+
+        <aside class="feature-card result-card" id="resultArea">
+          <div class="card-head"><span>检测结果</span><small>风险输出</small></div>
+          <div class="risk-ring" id="riskMeter"><div><b id="meterValue">--</b><span>诈骗风险</span></div></div>
+          <h3 id="riskTitle">等待检测</h3>
+          <div class="prob-line"><span>正常概率</span><b id="normalProb">--</b><div><i id="normalBar"></i></div></div>
+          <div class="prob-line fraud"><span>诈骗概率</span><b id="fraudProb">--</b><div><i id="fraudBar"></i></div></div>
+          <p class="result-note" id="explanationBox">模型解释将在检测完成后展示。</p>
+          <dl class="result-meta"><div><dt>模型</dt><dd id="modelName">ChineseBERT</dd></div><div><dt>耗时</dt><dd id="elapsed">--</dd></div><div><dt>输入</dt><dd id="inputChars">--</dd></div><div><dt>说明</dt><dd id="modelNote">融合字形和拼音特征，目前诈骗类识别效果最好。</dd></div></dl>
+          <div class="qwen-output" id="rawOutputBlock"><div id="qwenStructured"></div><details><summary>查看原始输出</summary><pre id="rawOutput"></pre></details></div>
+        </aside>
+      </div>
+    </section>
+
+    <section class="page" id="page-history">
+      <div class="section-heading"><span class="section-label">检测历史</span><p>历史记录包含模型、风险分数、时间、输入摘要和当时提交给模型的完整原始输入</p></div>
+      <div class="section-toolbar"><button class="white-btn compact danger" id="clearHistoryBtn"><i class="fas fa-trash-alt"></i> 清空历史</button></div>
+      <div id="historyContainer" class="history-list"></div>
+    </section>
+
+    <section class="page" id="page-alerts">
+      <div class="section-heading"><span class="section-label">反诈警示</span><p>展示刷单返利、冒充客服、虚假投资、贷款引流等骗术的话术特征、具体案例和学习入口</p></div>
+      <div id="alertGrid" class="alert-grid"></div>
+    </section>
+
+    <section class="page" id="page-models">
+      <div class="section-heading"><span class="section-label">模型中心</span><h1>比较模型，再投入检测</h1><p>查看 BERT、ChineseBERT 和 Qwen API 的测试指标、特点与适用场景</p></div>
+      <div id="modelCards" class="model-grid"></div>
+      <section class="feature-card chart-section"><div class="card-head"><span>模型对比实验框架</span><small>matched_2x 测试集</small></div><div class="chart-box"><canvas id="modelMetricsChart"></canvas></div></section>
+    </section>
+
+    <div class="account-modal" id="accountModal" aria-hidden="true">
+    <div class="modal-panel">
+      <div class="card-head"><span>修改密码</span><button class="modal-close" id="closeAccountModal" aria-label="关闭">×</button></div>
+      <p class="fine-print">为了保护检测历史，请定期更新密码。</p>
+      <input id="oldPassword" type="password" placeholder="原密码" />
+      <input id="newPassword" type="password" placeholder="新密码，至少 6 位" />
+      <button class="black-btn" id="changePasswordBtn"><i class="fas fa-lock"></i> 更新密码</button>
+    </div>
+  </div>
+  <div class="toast" id="toast"></div>
+  <script src="/dashboard.js"></script>
+</body>
+</html>

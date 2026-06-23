@@ -1,0 +1,54 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.venv/
+venv/
+.env
+.env.*
+
+# Local runtime data
+*.db
+*.sqlite
+*.sqlite3
+app_v2/data/
+data/
+log/
+logs/
+result/
+result_qwen/
+result_qwen_local/
+app_v2/result_qwen/
+
+# Large model weights / checkpoints
+*.ckpt
+*.bin
+*.safetensors
+*.pt
+*.pth
+pretrained/
+saved_dict/
+app_v2/pretrained/
+app_v2/saved_dict/
+pytorch_pretrained/
+
+# Generated archives and handoff bundles
+*.zip
+dist_app/
+handoff_project/
+SmartShieldFrontendDev2/
+back/
+python/
+/web/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Large raw ChiFraud data exports; keep compact matched dialogue splits instead
+dataset/ChiFraud_*.csv
+dataset/fraud_text_label.csv
+dataset/dialogue_binary/
