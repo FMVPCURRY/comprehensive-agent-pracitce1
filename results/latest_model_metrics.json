@@ -1,0 +1,68 @@
+{
+  "dataset": {
+    "name": "dialogue_binary_refined_large_test",
+    "total": 500,
+    "normal": 375,
+    "fraud": 125,
+    "sources": {
+      "ChiFraud_t2023": 460,
+      "validated_deepseek_doubao": 40
+    },
+    "crawler_weak_labels_included": false
+  },
+  "models": [
+    {
+      "name": "BERT refined",
+      "valid": 500,
+      "failed": 0,
+      "accuracy": 0.966,
+      "fraud_precision": 0.9153846154,
+      "fraud_recall": 0.952,
+      "fraud_f1": 0.9333333333,
+      "confusion_matrix": [[364, 11], [6, 119]],
+      "elapsed_seconds": 5.02
+    },
+    {
+      "name": "ChineseBERT refined",
+      "valid": 500,
+      "failed": 0,
+      "accuracy": 0.958,
+      "fraud_precision": 0.9,
+      "fraud_recall": 0.936,
+      "fraud_f1": 0.9176470588,
+      "confusion_matrix": [[362, 13], [8, 117]],
+      "elapsed_seconds": 5.66
+    },
+    {
+      "name": "Qwen3.7 zero-shot",
+      "valid": 495,
+      "failed": 5,
+      "accuracy": 0.8828282828,
+      "fraud_precision": 0.6833333333,
+      "fraud_recall": 0.9919354839,
+      "fraud_f1": 0.8092105263,
+      "confusion_matrix": [[314, 57], [1, 123]]
+    },
+    {
+      "name": "Qwen3.7 RAG calibrated",
+      "valid": 490,
+      "failed": 10,
+      "accuracy": 0.9387755102,
+      "fraud_precision": 0.9339622642,
+      "fraud_recall": 0.8114754098,
+      "fraud_f1": 0.8684210526,
+      "confusion_matrix": [[361, 7], [23, 99]]
+    },
+    {
+      "name": "Qwen3.7 RAG crawler calibrated",
+      "valid": 485,
+      "failed": 15,
+      "accuracy": 0.975257732,
+      "fraud_precision": 0.944,
+      "fraud_recall": 0.9593495935,
+      "fraud_f1": 0.9516129032,
+      "confusion_matrix": [[355, 7], [5, 118]]
+    }
+  ],
+  "note": "Qwen metrics are calculated only on valid API responses. Failed calls are reported separately."
+}

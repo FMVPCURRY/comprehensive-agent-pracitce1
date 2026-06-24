@@ -1,6 +1,6 @@
 # 智盾·聊天诈骗识别系统
 
-本项目是一个面向网络聊天场景的诈骗文本识别系统，基于 ChiFraud baseline 数据与本项目生成的对话数据完成训练和网页集成。系统包含本地 BERT、ChineseBERT 推理，以及可选的 Qwen API 云端大模型对比。
+本项目是一个面向网络聊天场景的诈骗文本识别系统，基于 ChiFraud、豆包验证后的生成对话和爬虫弱标注数据完成训练与网页集成。系统包含 refined BERT、ChineseBERT 本地推理，以及 Qwen3.7-plus 云端 RAG 推理与结果校准。
 
 当前交付包主要给前端同学继续开发页面与联调接口使用，不需要重新训练模型。
 
@@ -91,8 +91,10 @@ python -B web_app.py --host 127.0.0.1 --port 7871
 ```text
 web/index.html
 web/styles.css
-web/app.js
+web/dashboard.css
+web/dashboard.js
 web/login.html
+web/register.html
 ```
 
 当前页面基于原始 `fraud.html` 风格重做，并已经接入后端接口。前端同学通常只需要改 `web/` 目录，不需要动模型代码。
@@ -199,15 +201,15 @@ qwen_api
 
 ## 6. 模型结果
 
-当前网页右下角图表使用同一测试集 `dataset/dialogue_binary_matched_2x/test.tsv`，共 120 条样本，正常 90 条、诈骗 30 条。
+当前模型中心使用 `dataset/dialogue_binary_refined_large_test/test.tsv` 的评估结果。测试集共 500 条，正常 375 条、诈骗 125 条，不包含爬虫弱标注样本。
 
-| 模型 | Acc | 诈骗类 Precision | 诈骗类 Recall | 诈骗类 F1 |
-| --- | ---: | ---: | ---: | ---: |
-| BERT | 91.67% | 81.25% | 86.67% | 83.87% |
-| ChineseBERT | 95.00% | 90.00% | 90.00% | 90.00% |
-| Qwen API | 87.50% | 67.44% | 96.67% | 79.45% |
+| 模型 | 有效样本 | Acc | 诈骗类 Precision | 诈骗类 Recall | 诈骗类 F1 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| BERT refined | 500/500 | 96.60% | 91.54% | 95.20% | 93.33% |
+| ChineseBERT refined | 500/500 | 95.80% | 90.00% | 93.60% | 91.76% |
+| Qwen3.7 RAG + 爬虫库 + 校准 | 485/500 | 97.53% | 94.40% | 95.93% | 95.16% |
 
-结论：ChineseBERT 综合表现最好，适合作为默认模型；BERT 速度快，适合作为轻量备用；Qwen API 诈骗召回高，但误报较多，适合做大模型对比展示。
+Qwen 指标仅统计 API 成功返回的 485 条样本，15 条因云端内容安全策略或网络异常失败。BERT 与 ChineseBERT 均完成 500/500 推理，因此比较时应同时考虑覆盖率、成本和稳定性。
 
 ## 7. 主要目录
 

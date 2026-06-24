@@ -228,16 +228,16 @@ def clear_session_token(token):
 
 def change_user_password(user_id, old_password, new_password):
     if not old_password:
-        raise ValueError("??????")
+        raise ValueError("请输入原密码")
     if not new_password or len(new_password) < 6:
-        raise ValueError("??????? 6 ?")
+        raise ValueError("新密码长度不能少于 6 位")
     with get_db_connection() as conn:
         row = conn.execute(
             "SELECT salt, password_hash FROM users WHERE id = ?",
             (user_id,),
         ).fetchone()
         if not row or not verify_password(row["salt"], row["password_hash"], old_password):
-            raise ValueError("?????")
+            raise ValueError("原密码错误")
         salt, password_hash = hash_password(new_password)
         conn.execute(
             "UPDATE users SET salt = ?, password_hash = ? WHERE id = ?",
@@ -247,26 +247,26 @@ def change_user_password(user_id, old_password, new_password):
 
 def extract_text_from_image_data(image_data):
     if not image_data:
-        raise ValueError("??????")
+        raise ValueError("请先上传截图")
     image_data = str(image_data)
     if "," in image_data:
         image_data = image_data.split(",", 1)[1]
     try:
         raw_bytes = base64.b64decode(image_data, validate=False)
     except Exception:
-        raise ValueError("?????????")
+        raise ValueError("截图数据格式无效")
 
     try:
         from PIL import Image
         import pytesseract
     except Exception:
-        raise RuntimeError("??????? OCR???? pillow?pytesseract???? Tesseract OCR ?????????")
+        raise RuntimeError("OCR 组件未配置，请安装 Pillow、pytesseract 和 Tesseract OCR")
 
     image = Image.open(io.BytesIO(raw_bytes))
     text = pytesseract.image_to_string(image, lang="chi_sim+eng")
     text = text.strip()
     if not text:
-        raise ValueError("?????????????????????????????")
+        raise ValueError("未能从截图中识别出文字，请更换清晰图片或直接粘贴文本")
     return text
 
 
@@ -313,18 +313,18 @@ def parse_cookies(header_value):
 MODEL_META = {
     "bert": {
         "name": "BERT",
-        "description": "速度快，适合作为本地快速检测模型。",
-        "best_result": "matched_2x 测试集 Acc 91.67%，诈骗类 F1 83.87%",
+        "description": "本地 BERT 微调模型，使用 ChiFraudDialogRefined 权重，推理稳定、速度快。",
+        "best_result": "refined large test 500条：Acc 96.60%，诈骗类 Precision 91.54%，Recall 95.20%，F1 93.33%",
     },
     "chinesebert": {
         "name": "ChineseBERT",
-        "description": "融合字形和拼音特征，目前诈骗类识别效果最好。",
-        "best_result": "matched_2x 测试集 Acc 95.00%，诈骗类 F1 90.00%",
+        "description": "融合字形和拼音特征的本地模型，使用 ChiFraudDialogRefined 权重。",
+        "best_result": "refined large test 500条：Acc 95.80%，诈骗类 Precision 90.00%，Recall 93.60%，F1 91.76%",
     },
     "qwen_api": {
-        "name": "Qwen API",
-        "description": "云端千问接口，不占用本机显存，适合网页演示和临时测试。",
-        "best_result": "API 在线推理，结果受 prompt 和云端模型版本影响。",
+        "name": "Qwen3.7 RAG",
+        "description": "云端 Qwen3.7-plus，结合本地检索增强和结果校准；不占用本机显存，但依赖 API。",
+        "best_result": "refined large test 500条：有效485条，Acc 97.53%，诈骗类 Precision 94.40%，Recall 95.93%，F1 95.16%",
     },
 }
 

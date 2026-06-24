@@ -157,26 +157,26 @@ qwen_api
 
 ## 6. 模型说明
 
-当前推荐默认模型：
+当前本地默认模型：
 
 ```text
 ChineseBERT
 ```
 
-已知结果：
+最终大测试集结果：
 
 ```text
-BERT matched_2x test:
-Acc 91.67%，诈骗类 F1 83.87%
+BERT refined（500/500）:
+Acc 96.60%，诈骗类 F1 93.33%
 
-ChineseBERT matched_2x test:
-Acc 95.00%，诈骗类 F1 90.00%
+ChineseBERT refined（500/500）:
+Acc 95.80%，诈骗类 F1 91.76%
 
-Qwen LoRA matched_2x test:
-Acc 88.33%，诈骗类 F1 76.67%
+Qwen3.7 RAG + 爬虫库 + 校准（485/500）:
+Acc 97.53%，诈骗类 F1 95.16%
 ```
 
-网页里当前 Qwen 使用的是 `qwen_api`，即云端千问接口；本地 Qwen2.5 加载在当前机器上不稳定，容易显存/内存不足，所以前端演示时不要再使用本地 Qwen LoRA。
+网页里的 `qwen_api` 当前对应 Qwen3.7-plus 云端接口，并结合本地 TF-IDF RAG 检索与校准规则。Qwen 指标仅统计 API 成功返回的 485 条样本；本地 Qwen LoRA 仅保留为早期实验代码，不属于当前演示路线。
 
 ## 7. 常见问题
 

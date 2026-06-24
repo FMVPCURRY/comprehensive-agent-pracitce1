@@ -31,7 +31,7 @@
       <div class="section-heading page-heading-detect">
         <span class="section-label">智能检测</span>
         <h1>聊天诈骗风险识别工作台</h1>
-        <p>输入聊天记录、上传 TXT 或识别截图，选择 BERT、ChineseBERT 或 Qwen API 输出风险研判。</p>
+        <p>输入聊天记录、上传 TXT 或识别截图，选择 BERT、ChineseBERT 或 Qwen3.7 RAG 输出风险研判。</p>
       </div>
       <div class="feature-grid detect-grid">
         <section class="feature-card model-route-card wide-card">
@@ -39,7 +39,7 @@
           <div class="model-switcher compact-model-switcher" id="modelTabs">
             <button class="model-card" data-model="bert"><span>BERT</span><b>快速</b></button>
             <button class="model-card active" data-model="chinesebert"><span>ChineseBERT</span><b>推荐</b></button>
-            <button class="model-card" data-model="qwen_api"><span>Qwen API</span><b>云端</b></button>
+            <button class="model-card" data-model="qwen_api"><span>Qwen3.7 RAG</span><b>云端增强</b></button>
           </div>
           <input type="hidden" id="modelSelect" value="chinesebert" />
         </section>
@@ -97,9 +97,9 @@
     </section>
 
     <section class="page" id="page-models">
-      <div class="section-heading"><span class="section-label">模型中心</span><h1>比较模型，再投入检测</h1><p>查看 BERT、ChineseBERT 和 Qwen API 的测试指标、特点与适用场景</p></div>
+      <div class="section-heading"><span class="section-label">模型中心</span><h1>比较模型，再投入检测</h1><p>查看 BERT、ChineseBERT 和 Qwen3.7 RAG 的测试指标、特点与适用场景</p></div>
       <div id="modelCards" class="model-grid"></div>
-      <section class="feature-card chart-section"><div class="card-head"><span>模型对比实验框架</span><small>matched_2x 测试集</small></div><div class="chart-box"><canvas id="modelMetricsChart"></canvas></div></section>
+      <section class="feature-card chart-section"><div class="card-head"><span>模型对比实验框架</span><small>refined large test（500条）</small></div><div class="chart-box"><canvas id="modelMetricsChart"></canvas></div></section>
     </section>
 
     <div class="account-modal" id="accountModal" aria-hidden="true">

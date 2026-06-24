@@ -20,6 +20,7 @@ result/
 result_qwen/
 result_qwen_local/
 app_v2/result_qwen/
+result_large_test/
 
 # Large model weights / checkpoints
 *.ckpt
@@ -52,3 +53,7 @@ Thumbs.db
 dataset/ChiFraud_*.csv
 dataset/fraud_text_label.csv
 dataset/dialogue_binary/
+
+# Local document inspection helpers
+doc_inspection.txt
+inspect_project_docs.py

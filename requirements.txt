@@ -8,3 +8,11 @@ safetensors==0.7.0
 numpy
 tqdm
 tensorboardX
+Pillow
+pytesseract
+openai
+python-dotenv
+pandas
+requests
+beautifulsoup4
+lxml

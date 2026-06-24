@@ -44,9 +44,9 @@ D:\anaconda\envs\nlp\python.exe -m pip install -r requirements.txt
 
 ## 模型说明
 
-- BERT：本地离线推理，速度快。
-- ChineseBERT：本地离线推理，当前推荐默认模型。
-- Qwen API：云端千问接口，不占用本机显存，但需要网络和 API Key。
+- BERT：加载 `ChiFraudDialogRefined` 权重进行本地离线推理。
+- ChineseBERT：加载 `ChiFraudDialogRefined` 权重并融合字形、拼音特征。
+- Qwen3.7 RAG：调用 `qwen3.7-plus`，结合 refined 训练集、爬虫语料检索和校准规则。
 
 Qwen API 启动前需要设置：
 
@@ -56,12 +56,14 @@ set DASHSCOPE_API_KEY=你的千问APIKey
 
 如果不设置，BERT 和 ChineseBERT 仍可正常使用。
 
-## 当前测试集结果
+## 最终大测试集结果
 
-测试集：`dataset/dialogue_binary_matched_2x/test.tsv`，共 120 条。
+测试集：`dataset/dialogue_binary_refined_large_test/test.tsv`，共 500 条，正常 375 条、诈骗 125 条。
 
-| 模型 | Acc | 诈骗类 F1 |
-| --- | ---: | ---: |
-| BERT | 91.67% | 83.87% |
-| ChineseBERT | 95.00% | 90.00% |
-| Qwen API | 87.50% | 79.45% |
+| 模型 | 有效样本 | Acc | 诈骗类 F1 |
+| --- | ---: | ---: | ---: |
+| BERT refined | 500/500 | 96.60% | 93.33% |
+| ChineseBERT refined | 500/500 | 95.80% | 91.76% |
+| Qwen3.7 RAG + 爬虫库 + 校准 | 485/500 | 97.53% | 95.16% |
+
+Qwen 结果仅统计 API 成功返回的 485 条样本。

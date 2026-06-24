@@ -124,12 +124,18 @@ def deterministic_example(example_pool, sample_text, salt):
     return example_pool[int(digest, 16) % len(example_pool)]["text"]
 
 
-def call_qwen(api_key, model, messages, base_url, temperature, max_retries, retry_sleep):
+def call_qwen(api_key, model, messages, base_url, temperature, max_tokens, disable_thinking, max_retries, retry_sleep):
     payload = {
         "model": model,
         "messages": messages,
         "temperature": temperature,
+        "max_tokens": max_tokens,
     }
+    if disable_thinking:
+        # Qwen3-style models may enable thinking by default on some endpoints.
+        # Keep both forms for compatibility with DashScope/OpenAI-compatible APIs.
+        payload["enable_thinking"] = False
+        payload["extra_body"] = {"enable_thinking": False}
     request = urllib.request.Request(
         url=base_url.rstrip("/") + "/chat/completions",
         data=json.dumps(payload).encode("utf-8"),
@@ -192,6 +198,7 @@ def evaluate(args):
 
     y_true = []
     y_pred = []
+    failures = []
 
     with pred_path.open("w", encoding="utf-8") as fout:
         for idx, row in enumerate(eval_rows, start=1):
@@ -207,21 +214,37 @@ def evaluate(args):
             else:
                 messages = build_prompt(sample_text, "zero-shot")
 
-            raw_response = call_qwen(
-                api_key=args.api_key,
-                model=args.model,
-                messages=messages,
-                base_url=args.base_url,
-                temperature=args.temperature,
-                max_retries=args.max_retries,
-                retry_sleep=args.retry_sleep,
-            )
-            pred_label, explanation = parse_label(raw_response)
-            y_true.append(row["label"])
-            y_pred.append(pred_label)
+            try:
+                raw_response = call_qwen(
+                    api_key=args.api_key,
+                    model=args.model,
+                    messages=messages,
+                    base_url=args.base_url,
+                    temperature=args.temperature,
+                    max_tokens=args.max_tokens,
+                    disable_thinking=args.disable_thinking,
+                    max_retries=args.max_retries,
+                    retry_sleep=args.retry_sleep,
+                )
+                pred_label, explanation = parse_label(raw_response)
+                status = "ok"
+                y_true.append(row["label"])
+                y_pred.append(pred_label)
+            except Exception as exc:
+                raw_response = repr(exc)
+                pred_label = None
+                explanation = ""
+                status = "failed"
+                failures.append({
+                    "index": idx,
+                    "gold": row["label"],
+                    "error": raw_response,
+                    "text_preview": row["text"][:120],
+                })
 
             fout.write(json.dumps({
                 "index": idx,
+                "status": status,
                 "gold": row["label"],
                 "pred": pred_label,
                 "text": row["text"],
@@ -230,22 +253,36 @@ def evaluate(args):
             }, ensure_ascii=False) + "\n")
 
             if idx % args.log_every == 0 or idx == len(eval_rows):
-                print(f"[{idx}/{len(eval_rows)}] processed")
+                print(f"[{idx}/{len(eval_rows)}] processed, valid={len(y_true)}, failed={len(failures)}")
 
-    report = classification_report(
-        y_true,
-        y_pred,
-        labels=[0, 1],
-        target_names=["normal", "fraud"],
-        zero_division=0,
-        output_dict=True,
-    )
+    if y_true:
+        report = classification_report(
+            y_true,
+            y_pred,
+            labels=[0, 1],
+            target_names=["normal", "fraud"],
+            zero_division=0,
+            output_dict=True,
+        )
+        accuracy = accuracy_score(y_true, y_pred)
+        matrix = confusion_matrix(y_true, y_pred, labels=[0, 1]).tolist()
+    else:
+        report = {
+            "normal": {"precision": 0, "recall": 0, "f1-score": 0},
+            "fraud": {"precision": 0, "recall": 0, "f1-score": 0},
+            "macro avg": {"f1-score": 0},
+            "weighted avg": {"f1-score": 0},
+        }
+        accuracy = 0
+        matrix = [[0, 0], [0, 0]]
     summary = {
         "mode": args.mode,
         "model": args.model,
         "eval_path": args.eval_path,
-        "count": len(y_true),
-        "accuracy": accuracy_score(y_true, y_pred),
+        "count_total": len(eval_rows),
+        "count_valid": len(y_true),
+        "count_failed": len(failures),
+        "accuracy": accuracy,
         "fraud_precision": report["fraud"]["precision"],
         "fraud_recall": report["fraud"]["recall"],
         "fraud_f1": report["fraud"]["f1-score"],
@@ -254,7 +291,8 @@ def evaluate(args):
         "normal_f1": report["normal"]["f1-score"],
         "macro_f1": report["macro avg"]["f1-score"],
         "weighted_f1": report["weighted avg"]["f1-score"],
-        "confusion_matrix": confusion_matrix(y_true, y_pred, labels=[0, 1]).tolist(),
+        "confusion_matrix": matrix,
+        "failures": failures,
         "prediction_file": str(pred_path),
     }
 
@@ -271,10 +309,12 @@ def main():
     parser.add_argument("--output-dir", default="./result_qwen")
     parser.add_argument("--run-name", required=True)
     parser.add_argument("--mode", choices=["zero-shot", "icl"], default="icl")
-    parser.add_argument("--model", default="qwen-plus")
+    parser.add_argument("--model", default="qwen3.7-plus")
     parser.add_argument("--base-url", default="https://dashscope.aliyuncs.com/compatible-mode/v1")
     parser.add_argument("--api-key", default=DEFAULT_API_KEY)
     parser.add_argument("--temperature", type=float, default=0.5)
+    parser.add_argument("--max-tokens", type=int, default=128)
+    parser.add_argument("--disable-thinking", action=argparse.BooleanOptionalAction, default=True)
     parser.add_argument("--max-retries", type=int, default=3)
     parser.add_argument("--retry-sleep", type=float, default=2.0)
     parser.add_argument("--log-every", type=int, default=10)

@@ -5,18 +5,18 @@ let screenshotDataUrl = "";
 let metricsChart = null;
 
 const modelMetrics = {
-  bert: { name: "BERT", acc: 91.67, fraudP: 81.25, fraudR: 86.67, fraudF1: 83.87, note: "速度快、成本低，适合作为默认本地基线。" },
-  chinesebert: { name: "ChineseBERT", acc: 95.00, fraudP: 90.00, fraudR: 90.00, fraudF1: 90.00, note: "融合字形与拼音特征，当前综合效果最好。" },
-  qwen_api: { name: "Qwen API", acc: 87.50, fraudP: 67.44, fraudR: 96.67, fraudF1: 79.45, note: "云端生成式判断，诈骗召回高但误报更多。" },
+  bert: { name: "BERT", acc: 96.60, fraudP: 91.54, fraudR: 95.20, fraudF1: 93.33, note: "本地稳定推理，500条大测试集上表现强，适合快速检测。" },
+  chinesebert: { name: "ChineseBERT", acc: 95.80, fraudP: 90.00, fraudR: 93.60, fraudF1: 91.76, note: "融合字形与拼音特征，本地运行稳定，适合中文场景对比。" },
+  qwen_api: { name: "Qwen3.7 RAG", acc: 97.53, fraudP: 94.40, fraudR: 95.93, fraudF1: 95.16, note: "云端 Qwen3.7 + 检索增强 + 校准，500条大测试集有效样本485条，综合指标最高。" },
 };
 
 const scamCases = [
-  { icon: "fa-chart-line", title: "刷单返利", pattern: "先给小额返利建立信任，再要求连续垫付、转账进群或完成组合任务。", caseText: "用户看到“点赞返佣”兼职，前两单得到小额返利，随后被要求垫付 300、1000、5000 元做连单，平台显示可提现但客服要求继续缴纳保证金。", keywords: ["垫付", "返佣", "进群", "连单"], links: [["案例网页", "https://www.baidu.com/s?wd=国家反诈中心+刷单返利+案例"], ["视频检索", "https://www.baidu.com/s?wd=刷单返利+诈骗+视频"]] },
-  { icon: "fa-headset", title: "冒充客服", pattern: "以退款、取消会员、账户异常为由，引导屏幕共享或索要验证码。", caseText: "对方自称电商客服，称误开通会员每月扣费，需要按步骤操作解除，诱导下载会议软件并打开屏幕共享。", keywords: ["退款", "验证码", "屏幕共享", "取消会员"], links: [["案例网页", "https://www.baidu.com/s?wd=冒充客服+诈骗+案例"], ["视频检索", "https://www.baidu.com/s?wd=冒充客服+诈骗+视频"]] },
-  { icon: "fa-coins", title: "虚假投资", pattern: "宣传内幕消息、稳赚不赔、高收益低风险，并要求向私人账户充值。", caseText: "网友推荐“数字资产量化平台”，前期后台收益持续上涨，小额能提现；追加大额本金后平台冻结账户，客服要求缴税解冻。", keywords: ["稳赚", "内幕", "充值", "解冻金"], links: [["案例网页", "https://www.baidu.com/s?wd=虚假投资理财+诈骗+案例"], ["视频检索", "https://www.baidu.com/s?wd=虚假投资理财+诈骗+视频"]] },
-  { icon: "fa-credit-card", title: "贷款引流", pattern: "声称无抵押秒到账，但要求先交手续费、刷流水、保证金或解冻金。", caseText: "对方称贷款额度已批，需要先转“认证金”刷流水证明还款能力；转账后又以银行卡号错误为由要求缴纳解冻费。", keywords: ["无抵押", "手续费", "刷流水", "保证金"], links: [["案例网页", "https://www.baidu.com/s?wd=网络贷款+诈骗+案例"], ["视频检索", "https://www.baidu.com/s?wd=网络贷款+诈骗+视频"]] },
-  { icon: "fa-user-secret", title: "冒充熟人/领导", pattern: "通过昵称头像伪装熟人，以紧急周转、项目付款等理由要求转账。", caseText: "头像和昵称都像老师或领导，对方称不方便接电话，要求先帮忙垫付一笔费用，并承诺下午归还。", keywords: ["不方便接电话", "垫付", "领导", "紧急"], links: [["案例网页", "https://www.baidu.com/s?wd=冒充领导熟人+诈骗+案例"], ["视频检索", "https://www.baidu.com/s?wd=冒充领导熟人+诈骗+视频"]] },
-  { icon: "fa-heart-crack", title: "情感诱导", pattern: "长期聊天建立亲密关系，再引导投资、借钱或代付。", caseText: "对方以恋爱关系取得信任，随后称发现稳赚投资渠道，指导注册平台充值，最后以账户风控为由无法提现。", keywords: ["恋爱", "稳赚", "充值", "无法提现"], links: [["案例网页", "https://www.baidu.com/s?wd=杀猪盘+诈骗+案例"], ["视频检索", "https://www.baidu.com/s?wd=杀猪盘+诈骗+视频"]] },
+  { icon: "fa-chart-line", title: "刷单返利", pattern: "先给小额返利建立信任，再要求连续垫付、转账进群或完成组合任务。", caseText: "用户看到“点赞返佣”兼职，前两单得到小额返利，随后被要求垫付 300、1000、5000 元做连单，平台显示可提现但客服要求继续缴纳保证金。", keywords: ["垫付", "返佣", "进群", "连单"], links: [["警方破案案例", "https://www.sohu.com/a/831886465_99965810"], ["案例视频", "https://www.bilibili.com/video/BV1jNMizNEbq"]] },
+  { icon: "fa-headset", title: "冒充客服", pattern: "以退款、取消会员、账户异常为由，引导屏幕共享或索要验证码。", caseText: "对方自称电商客服，称误开通会员每月扣费，需要按步骤操作解除，诱导下载会议软件并打开屏幕共享。", keywords: ["退款", "验证码", "屏幕共享", "取消会员"], links: [["政法机关案例", "https://www.hnzf.gov.cn/content/646746/59/12315742.html"], ["案例视频", "https://www.bilibili.com/video/BV1Lu4y1C7qk"]] },
+  { icon: "fa-coins", title: "虚假投资", pattern: "宣传内幕消息、稳赚不赔、高收益低风险，并要求向私人账户充值。", caseText: "网友推荐“数字资产量化平台”，前期后台收益持续上涨，小额能提现；追加大额本金后平台冻结账户，客服要求缴税解冻。", keywords: ["稳赚", "内幕", "充值", "解冻金"], links: [["最高检案例", "https://www.spp.gov.cn/spp/xwfbh/wsfbt/202310/t20231024_631622.shtml"], ["案例视频", "https://www.bilibili.com/video/BV1tq4y1M7cD"]] },
+  { icon: "fa-credit-card", title: "贷款引流", pattern: "声称无抵押秒到账，但要求先交手续费、刷流水、保证金或解冻金。", caseText: "对方称贷款额度已批，需要先转“认证金”刷流水证明还款能力；转账后又以银行卡号错误为由要求缴纳解冻费。", keywords: ["无抵押", "手续费", "刷流水", "保证金"], links: [["检察机关案例", "https://www.hnzf.gov.cn/content/646741/58/12864352.html"], ["反诈案例集", "https://www.ts.cn/xwzx/fzxw/202504/t20250409_27840580.shtml"]] },
+  { icon: "fa-user-secret", title: "冒充熟人/领导", pattern: "通过昵称头像伪装熟人，以紧急周转、项目付款等理由要求转账。", caseText: "头像和昵称都像老师或领导，对方称不方便接电话，要求先帮忙垫付一笔费用，并承诺下午归还。", keywords: ["不方便接电话", "垫付", "领导", "紧急"], links: [["公安案例集", "https://www.ts.cn/xwzx/fzxw/202504/t20250409_27840580.shtml"], ["高发骗术案例", "https://finance.sina.com.cn/jjxw/2023-08-17/doc-imzhnwuc8397448.shtml"]] },
+  { icon: "fa-heart-crack", title: "情感诱导", pattern: "长期聊天建立亲密关系，再引导投资、借钱或代付。", caseText: "对方以恋爱关系取得信任，随后称发现稳赚投资渠道，指导注册平台充值，最后以账户风控为由无法提现。", keywords: ["恋爱", "稳赚", "充值", "无法提现"], links: [["最高检案例", "https://www.spp.gov.cn/spp/xwfbh/wsfbt/202310/t20231024_631622.shtml"], ["公安案例集", "https://www.ts.cn/xwzx/fzxw/202504/t20250409_27840580.shtml"]] },
 ];
 
 const $ = (id) => document.getElementById(id);
@@ -150,11 +150,11 @@ function renderChart() {
   metricsChart = new Chart(canvas, {
     type: "bar",
     data: {
-      labels: ["BERT", "ChineseBERT", "Qwen API"],
+      labels: ["BERT", "ChineseBERT", "Qwen3.7 RAG"],
       datasets: [
-        { label: "Accuracy", data: [91.67, 95.00, 87.50], backgroundColor: "#111827", borderRadius: 10 },
-        { label: "Fraud F1", data: [83.87, 90.00, 79.45], backgroundColor: "#047857", borderRadius: 10 },
-        { label: "Fraud Recall", data: [86.67, 90.00, 96.67], backgroundColor: "#dc2626", borderRadius: 10 },
+        { label: "Accuracy", data: [96.60, 95.80, 97.53], backgroundColor: "#111827", borderRadius: 10 },
+        { label: "Fraud F1", data: [93.33, 91.76, 95.16], backgroundColor: "#047857", borderRadius: 10 },
+        { label: "Fraud Recall", data: [95.20, 93.60, 95.93], backgroundColor: "#dc2626", borderRadius: 10 },
       ],
     },
     options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: "bottom" } }, scales: { y: { beginAtZero: true, max: 100 } } },

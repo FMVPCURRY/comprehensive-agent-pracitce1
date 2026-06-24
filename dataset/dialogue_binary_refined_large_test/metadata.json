@@ -1,0 +1,52 @@
+{
+  "dataset": "dialogue_binary_refined_large_test",
+  "seed": 2027,
+  "policy": "large clean test; crawler weak labels are excluded",
+  "input_files": {
+    "validated": "validated_data.jsonl",
+    "chifraud_test": "ChiFraud_t2023.csv"
+  },
+  "target_total": 500,
+  "target_fraud_ratio": 0.25,
+  "validated_part_summary": {
+    "total": 40,
+    "normal": 30,
+    "fraud": 10,
+    "sources": {
+      "validated_deepseek_doubao": 40
+    }
+  },
+  "chifraud_part_summary": {
+    "total": 460,
+    "normal": 345,
+    "fraud": 115,
+    "sources": {
+      "chifraud_ChiFraud_t2023": 460
+    }
+  },
+  "chifraud_sample_plan": {
+    "normal": 345,
+    "fraud_total": 115,
+    "fraud_by_raw_label": {
+      "1": 12,
+      "2": 12,
+      "3": 12,
+      "4": 12,
+      "5": 12,
+      "6": 11,
+      "7": 11,
+      "8": 11,
+      "9": 11,
+      "10": 11
+    }
+  },
+  "final_summary": {
+    "total": 500,
+    "normal": 375,
+    "fraud": 125,
+    "sources": {
+      "chifraud_ChiFraud_t2023": 460,
+      "validated_deepseek_doubao": 40
+    }
+  }
+}
